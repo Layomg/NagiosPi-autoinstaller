@@ -39,13 +39,20 @@ if [ $dns_conf = "s" ]  || [ $dns_conf = "S" ];
 				echo "nameserver $dns_conf_manually" >> /etc/resolv.conf
 		fi
 fi
+
+read -r -p "¿Configurar nagios (s/n): " nagios_conf_external
+if [ $nagios_conf_external = "s" ] || [ $nagios_conf_external = "S" ];
+	then
+		sed -i "/check_external_commands=0/d" /etc/nagios3/nagios.cfg
+		echo "check_external_commands=1" >> /etc/nagios3/nagios.cfg
+fi
+
 read -r -p "¿Instalar Postfix? (s/n): " postfix_install
 if [ $postfix_install = "s" ] || [ $postfix_install = "S" ];
 	then
 		sudo apt-get update
 		sudo apt-get install postfix
 fi
-
 read -r -p "¿Configurar Postfix? (s/n): " postfix_conf
 if [ $postfix_conf = "s" ] || [ $postfix_conf = "S" ];
 	then
