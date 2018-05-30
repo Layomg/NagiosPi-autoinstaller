@@ -95,17 +95,29 @@ if [ $cacti_install = "s" ] || [ $cacti_install = "S" ];
 			else
 					sudo mysql -uroot -p$mysql_root_passwd -e "GRANT ALL ON cacti.* TO cactiuser@localhost IDENTIFIED BY 'cactiuser'; flush privileges;"
 			fi
-		sudo chown -R www-data /www/var/cacti/rra 
-		sudo chown -R www-data /www/var/cacti/log
-		sudo echo "*/5**** www-data php /var/www/cacti/poller.php > /dev/null 2>&1" >> /etc/crontab
+		sudo chown -R www-data /var/www/cacti/rra/
+		sudo chown -R www-data /var/www/cacti/log/
+		sudo apt-get install php5-ldap
+		sed -i '$d' /etc/crontab
+		sudo echo "*/5 * * * * www-data php /var/www/cacti/poller.php > /dev/null 2>&1" >> /etc/crontab
+		sudo echo "#" >> /etc/crontab
+		sudo service cron restart
 		sudo service apache2 restart
 		sudo service mysql restart
-		sudo apt-get install php5-ldap
-		sudo mysql -uroot -p$mysql_root_passwd -e "use mysql; insert into time_zone_name values ('Europe/Spain','1'); GRANT SELECT ON mysql.time_zone_name TO cactiuser@localhost; flush privileges;"
-		sudo echo "date.timezone = 'Europe/Spain'" >> /etc/php5/apache2/php.ini
+		sudo echo "Configurando SNMP..."
+		sudo apt-get install snmp snmpd snmp-mibs-downloader
+		sudo download-mibs
+		sed -i "/agentAddress udp:127.0.0.1:161/d" /etc/snmp/snmpd.conf
+		sed -i "/rocommunity public default/d" /etc/snmp/snmpd.conf
+		sudo echo "agentAddress udp:161" >> /etc/snmp/snmpd.conf
+		sudo echo "rocommunity public" >> /etc/snmp/snmpd.conf
+		sudo mysql -uroot -p$mysql_root_passwd -e "use mysql; insert into time_zone_name values ('Europe/Madrid','1'); GRANT SELECT ON mysql.time_zone_name TO cactiuser@localhost; flush privileges;"
+		sudo echo "date.timezone = Europe/Madrid" >> /etc/php5/apache2/php.ini
 		sudo service apache2 restart
 		sudo chmod -R 777 /var/www/cacti/
-		sudo apt-get install rrdtool		
+		sudo apt-get install rrdtool
+		sudo service apache2 restart
+				
 fi
 
 read -r -p "¿Desea cambiar la contraseña de la página web de nagios? (s/n): " nagios_passwd_change
@@ -169,6 +181,12 @@ read -r -p "¿Desea cambiar la contraseña del root del sistema? (s/n): " system
 if [ $system_root_change = "s" ] || [ $system_root_change = "S" ];
 	then
 		passwd
+fi
+
+read -r -p "¿Desea reiniciar ahora (s/n)?: " system_reboot
+if [ $system_reboot = "s" ] || [ $system_reboot = "S" ];
+	then
+		sudo reboot
 fi
  
    
